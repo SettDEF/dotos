@@ -101,8 +101,9 @@ dotos — a team on your network (no server, no account)
 Add a friend:
   1. once per computer:   dotos me --handle caesar --name Caesar
   2. one person:          dotos lan init \"Our team\"
-                          dotos lan code            send the code to the friend
-  3. each friend:         dotos lan join CODE
+                          dotos lan invite          a six-digit code, for 10 minutes
+  3. each friend:         dotos lan join 482913     that code, on the same network
+                          (dotos lan code gives the long code, for another network)
   4. keep Dotos open, or: dotos serve               finds the others, syncs every 20 s
 
 Team:
@@ -294,8 +295,9 @@ fn main() {
             let pj = |v: serde_json::Value| { println!("{}", if json { v.to_string() } else { serde_json::to_string_pretty(&v).unwrap_or_default() }); 0 };
             let name = rest.get(3).cloned().unwrap_or_else(|| "team".into());
             match rest.get(1).map(String::as_str) {
-                Some("init") => match lan::init(rest.get(2).map(String::as_str).unwrap_or("team")) { Ok(t) => { println!("team {} made. On the other machine:\n  dotos lan join {}", t.name, t.code()); 0 } Err(e) => { eprintln!("dotos: {e}"); 1 } },
-                Some("join") => match rest.get(2) { Some(c) => match lan::join(c, &name) { Ok(t) => { println!("joined {} ({}). dotos serve (or dotos lan serve) keeps it in sync.", t.name, t.id()); 0 } Err(e) => { eprintln!("dotos: {e}"); 1 } }, None => usage_err("lan join CODE [NAME]") },
+                Some("init") => match lan::init(rest.get(2).map(String::as_str).unwrap_or("team")) { Ok(t) => { println!("team {} made. Add a friend: dotos lan invite (a six-digit code)\n(or the long code: dotos lan join {})", t.name, t.code()); 0 } Err(e) => { eprintln!("dotos: {e}"); 1 } },
+                Some("join") => match rest.get(2) { Some(c) => match { let d: String = rest[2..].concat().chars().filter(|x| x.is_ascii_digit()).collect(); if d.len() == 6 && rest[2..].concat().chars().all(|x| x.is_ascii_digit() || x == '-' || x == ' ') { lan::join_pin(&d, &name) } else { lan::join(c, &name) } } { Ok(t) => { println!("joined {} ({}). dotos serve (or dotos lan serve) keeps it in sync.", t.name, t.id()); 0 } Err(e) => { eprintln!("dotos: {e}"); 1 } }, None => usage_err("lan join CODE [NAME]") },
+                Some("invite") => match lan::invite(|pin| println!("the code: {pin}\n\nOn the other computer (same network):\n  dotos lan join {}\n\nwaiting for it (10 min) …", pin.replace(' ', ""))) { Ok(m) => { println!("{m}: they are in the team now"); 0 } Err(e) => { eprintln!("dotos: {e}"); 1 } },
                 Some("code") => match lan::team() { Some(t) => { println!("dotos lan join {}", t.code()); 0 } None => { eprintln!("dotos: not in a team (dotos lan init)"); 1 } },
                 Some("leave") => match lan::leave() { Ok(()) => { println!("left the team (threads stay here)"); 0 } Err(e) => { eprintln!("dotos: {e}"); 1 } },
                 Some("status") => pj(serde_json::json!({ "team": lan::team().map(|t| serde_json::json!({ "name": t.name, "id": t.id() })), "peers": lan::peers(), "shared": lan::shared() })),
@@ -305,7 +307,7 @@ fn main() {
                     None => usage_err("lan share|unshare LIST"),
                 },
                 Some("serve") => match lan::run() { Ok(()) => 0, Err(e) => { eprintln!("dotos: {e}"); 1 } },
-                _ => usage_err("lan init [NAME] | join CODE | code | status | sync [--peer HOST:PORT] | serve | share LIST | unshare LIST | leave"),
+                _ => usage_err("lan init [NAME] | invite | join CODE | code | status | sync [--peer HOST:PORT] | serve | share LIST | unshare LIST | leave"),
             }
         }
         // Teams 2: a message becomes a task (linked both ways); whoever it @mentions does it

@@ -93,6 +93,111 @@ pub fn leave() -> Result<(), String> {
     std::fs::remove_file(team_file()).map_err(|e| e.to_string())
 }
 
+// ── pairing with a short code: `dotos lan invite` shows six digits, `dotos lan join 482913` ──
+// The inviter waits (10 min, 3 wrong tries at most) and announces itself on UDP; the joiner finds it,
+// both prove the code with nonces, and the team key comes over masked with the code. As strong as
+// the code (a listener on the network could guess six digits offline): the sync itself is not
+// encrypted either, so this is for a home or office network, as the rest of LAN sync is.
+const PAIR_PORT: u16 = 47822;
+const PAIR_UDP: u16 = 47823;
+
+fn pair_mask(pin: &str, n1: &str, n2: &str) -> Vec<u8> {
+    let mut h = Sha256::new();
+    h.update(b"dotos-pair-mask");
+    h.update(pin.as_bytes());
+    h.update(n1.as_bytes());
+    h.update(n2.as_bytes());
+    let a = h.finalize();
+    let mut h2 = Sha256::new();
+    h2.update(a);
+    h2.update(b"2");
+    let b = h2.finalize();
+    a.iter().chain(b.iter()).copied().collect()
+}
+
+fn xor_hex(data: &[u8], mask: &[u8]) -> String {
+    data.iter().zip(mask).map(|(d, m)| format!("{:02x}", d ^ m)).collect()
+}
+
+fn unxor_hex(hex: &str, mask: &[u8]) -> Option<Vec<u8>> {
+    let bytes: Option<Vec<u8>> = (0..hex.len()).step_by(2).map(|i| u8::from_str_radix(hex.get(i..i + 2)?, 16).ok()).collect();
+    Some(bytes?.iter().zip(mask).map(|(d, m)| d ^ m).collect())
+}
+
+/// `dotos lan invite`: a six-digit code, valid while this waits (up to 10 minutes) for one join.
+pub fn invite(show: impl Fn(&str)) -> Result<String, String> {
+    let t = team().ok_or("not in a team (dotos lan init)")?;
+    let mut r = [0u8; 4];
+    getrandom::getrandom(&mut r).map_err(|e| e.to_string())?;
+    let pin = format!("{:06}", u32::from_le_bytes(r) % 1_000_000);
+    show(&format!("{} {}", &pin[..3], &pin[3..]));
+    let listener = TcpListener::bind(("0.0.0.0", PAIR_PORT)).map_err(|e| format!("port {PAIR_PORT}: {e}"))?;
+    listener.set_nonblocking(true).map_err(|e| e.to_string())?;
+    let udp = UdpSocket::bind(("0.0.0.0", 0)).map_err(|e| e.to_string())?;
+    let _ = udp.set_broadcast(true);
+    let hello = json!({ "dotos-invite": PAIR_PORT, "host": hostname(), "who": threads::me().handle }).to_string();
+    let end = Instant::now() + Duration::from_secs(600);
+    let (mut wrong, mut last_hello) = (0, Instant::now() - Duration::from_secs(5));
+    while Instant::now() < end {
+        if last_hello.elapsed() >= Duration::from_secs(1) {
+            let _ = udp.send_to(hello.as_bytes(), ("255.255.255.255", PAIR_UDP));
+            last_hello = Instant::now();
+        }
+        let Ok((s, from)) = listener.accept() else { std::thread::sleep(Duration::from_millis(100)); continue };
+        let _ = s.set_nonblocking(false);
+        let _ = s.set_read_timeout(Some(Duration::from_secs(10)));
+        let mut w = s.try_clone().map_err(|e| e.to_string())?;
+        let mut r = BufReader::new(s);
+        let n1 = random_hex(16);
+        if send(&mut w, &json!({ "nonce": n1, "team": t.name })).is_err() { continue; }
+        let Ok(v) = recv(&mut r) else { continue };
+        let n2 = v["nonce"].as_str().unwrap_or("").to_string();
+        if n2.len() != 32 || v["proof"].as_str() != Some(mac(&pin, "join", &n1, &n2).as_str()) {
+            let _ = send(&mut w, &json!({ "error": "wrong code" }));
+            wrong += 1;
+            if wrong >= 3 { return Err("three wrong codes: the invite is closed (dotos lan invite for a new one)".into()); }
+            continue;
+        }
+        let key = (0..t.key.len()).step_by(2).filter_map(|i| u8::from_str_radix(&t.key[i..i + 2], 16).ok()).collect::<Vec<u8>>();
+        let _ = send(&mut w, &json!({ "team": t.name, "key": xor_hex(&key, &pair_mask(&pin, &n1, &n2)), "proof": mac(&pin, "invite", &n2, &n1) }));
+        return Ok(format!("{} joined from {}", v["who"].as_str().unwrap_or("someone"), from.ip()));
+    }
+    Err("no one joined within 10 minutes (dotos lan invite for a new code)".into())
+}
+
+/// `dotos lan join 482913`: finds the invite on the network and takes the team from it.
+pub fn join_pin(pin: &str, name: &str) -> Result<Team, String> {
+    let sock = UdpSocket::bind(("0.0.0.0", PAIR_UDP)).map_err(|e| format!("port {PAIR_UDP}: {e}"))?;
+    let _ = sock.set_read_timeout(Some(Duration::from_millis(300)));
+    let end = Instant::now() + Duration::from_secs(8);
+    let mut buf = [0u8; 512];
+    let addr = loop {
+        if Instant::now() > end {
+            return Err("no invite on this network: is `dotos lan invite` running on the other computer, on the same network? (a firewall may block ports 47822-47823)".into());
+        }
+        let Ok((n, from)) = sock.recv_from(&mut buf) else { continue };
+        let Ok(v) = serde_json::from_slice::<Value>(&buf[..n]) else { continue };
+        if let Some(p) = v["dotos-invite"].as_u64() { break SocketAddr::new(from.ip(), p as u16); }
+    };
+    let s = TcpStream::connect_timeout(&addr, Duration::from_secs(5)).map_err(|e| format!("{addr}: {e}"))?;
+    let _ = s.set_read_timeout(Some(Duration::from_secs(10)));
+    let mut w = s.try_clone().map_err(|e| e.to_string())?;
+    let mut r = BufReader::new(s);
+    let v = recv(&mut r)?;
+    let n1 = v["nonce"].as_str().unwrap_or("").to_string();
+    let n2 = random_hex(16);
+    send(&mut w, &json!({ "nonce": n2, "proof": mac(pin, "join", &n1, &n2), "who": threads::me().handle })).map_err(|e| e.to_string())?;
+    let v = recv(&mut r)?;
+    if let Some(e) = v["error"].as_str() { return Err(e.to_string()); }
+    if v["proof"].as_str() != Some(mac(pin, "invite", &n2, &n1).as_str()) {
+        return Err("the other side did not prove the code".into());
+    }
+    let key = unxor_hex(v["key"].as_str().unwrap_or(""), &pair_mask(pin, &n1, &n2)).filter(|k| k.len() == 32).ok_or("no team key came")?;
+    let t = Team { name: if name.is_empty() || name == "team" { v["team"].as_str().unwrap_or("team").to_string() } else { name.to_string() }, key: key.iter().map(|b| format!("{b:02x}")).collect() };
+    save_team(&t)?;
+    Ok(t)
+}
+
 fn mac(key: &str, tag: &str, a: &str, b: &str) -> String {
     let mut m = <Hmac<Sha256> as Mac>::new_from_slice(key.as_bytes()).expect("any key length");
     m.update(tag.as_bytes());
