@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# @name    Timer follows the task
+# @about   Moving a task to "doing" starts timewarrior on it; finishing or pausing it stops the timer.
+# @kind    action
+# @on      state,done,cancelled
+# @option  STOP_ON_WAITING bool true "Stop the timer when a task goes to waiting"
+#
+# Receives the task as JSON on stdin and the event in DOTOS_EVENT.
+set -euo pipefail
+task=$(cat)
+state=$(printf '%s' "$task" | jq -r '.state')
+uid=$(printf '%s' "$task" | jq -r '.uid')
+active=$(timew get dom.active.tag.1 2>/dev/null || true)
+
+case $state in
+    doing)
+        [ "$active" = "dotos:$uid" ] && exit 0
+        "${DOTOS_BIN:-dotos}" track "$uid" >/dev/null ;;
+    waiting)
+        [ "${DOTOS_OPT_STOP_ON_WAITING:-1}" = "0" ] && exit 0
+        timew get dom.active.tag.count >/dev/null 2>&1 && timew export @1 2>/dev/null | grep -q "dotos:$uid" && timew stop >/dev/null || true ;;
+    done|cancelled|todo|inbox)
+        timew export @1 2>/dev/null | grep -q "dotos:$uid" && timew stop >/dev/null || true ;;
+esac

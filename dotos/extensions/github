@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# @name    GitHub
+# @about   Open issues and review requests assigned to you, as tasks. Closed on GitHub → closed here.
+# @kind    source
+# @every   20m
+# @option  ISSUES bool true "Issues assigned to me"
+# @option  REVIEWS bool true "Pull requests waiting for my review"
+# @option  LIMIT int 50 "At most this many of each"
+#
+# Uses the gh CLI and its login (`gh auth login` once). No token is stored here.
+set -euo pipefail
+command -v gh >/dev/null || { echo "gh is not installed" >&2; exit 1; }
+gh auth status >/dev/null 2>&1 || { echo "gh is not logged in: run 'gh auth login'" >&2; exit 1; }
+limit=${DOTOS_OPT_LIMIT:-50}
+
+emit() { # $1 = kind tag
+    jq -c --arg kind "$1" '.[] | {
+        key: (.repository.nameWithOwner + "#" + (.number|tostring)),
+        title: (.title),
+        project: (.repository.name),
+        tags: ["github", $kind],
+        url: .url,
+        notes: ($kind + " " + .repository.nameWithOwner + "#" + (.number|tostring))
+    }'
+}
+
+if [ "${DOTOS_OPT_ISSUES:-1}" != "0" ]; then
+    gh search issues --assignee=@me --state=open --limit "$limit" --json number,title,url,repository | emit issue
+fi
+if [ "${DOTOS_OPT_REVIEWS:-1}" != "0" ]; then
+    gh search prs --review-requested=@me --state=open --limit "$limit" --json number,title,url,repository | emit review
+fi

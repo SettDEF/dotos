@@ -1,0 +1,12 @@
+singleton Appearance 1.0 Appearance.qml
+Icon 1.0 Icon.qml
+IconButton 1.0 IconButton.qml
+SettingRow 1.0 SettingRow.qml
+SettingSection 1.0 SettingSection.qml
+SegmentedControl 1.0 SegmentedControl.qml
+Chip 1.0 Chip.qml
+Momentum 1.0 Momentum.qml
+MomentumInjector 1.0 MomentumInjector.qml
+Tip 1.0 Tip.qml
+ArrangeBoard 1.0 ArrangeBoard.qml
+TextMenu 1.0 TextMenu.qml

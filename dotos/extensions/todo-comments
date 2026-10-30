@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# @name    TODO comments
+# @about   Every TODO: / FIXME: comment in your projects becomes a task, linked to its file and line. Remove the comment and the task closes itself.
+# @kind    source
+# @every   30m
+# @option  ROOTS text "/mnt/storage/dev/projects" "Folders to scan (comma separated)"
+# @option  WORDS text "TODO,FIXME" "Comment markers"
+# @option  MAX int 300 "At most this many tasks"
+# @option  SKIP text "*.md,*.txt,*.json,*.lock" "File patterns to leave out (prose mentions TODO: too)"
+#
+# One JSON object per line on stdout (see `dotos ext` docs). The key is the
+# file plus the comment's text, not its line number, so adding lines above a
+# TODO does not turn it into a "new" task.
+set -euo pipefail
+
+roots=${DOTOS_OPT_ROOTS:-/mnt/storage/dev/projects}
+words=${DOTOS_OPT_WORDS:-TODO,FIXME}
+max=${DOTOS_OPT_MAX:-300}
+skip=${DOTOS_OPT_SKIP:-*.md,*.txt,*.json,*.lock}
+globs=()
+IFS=',' read -ra pats <<< "$skip"
+for p in "${pats[@]}"; do [ -n "$p" ] && globs+=(--glob "!$p"); done
+pattern="\\b($(echo "$words" | tr ',' '|')):\\s*(.+)"
+
+IFS=',' read -ra dirs <<< "$roots"
+markers=$(echo "$words" | tr ',' '|')
+rg --no-heading --line-number --color never --max-columns 300 \
+   --glob '!node_modules' --glob '!target' --glob '!*.min.*' --glob '!vendor' --glob '!.git' "${globs[@]}" \
+   -e "$pattern" "${dirs[@]}" 2>/dev/null | head -n "$max" |
+while IFS=: read -r file line rest; do
+    # a marker in quotes or backticks is a mention ("every `TODO:` becomes…"), not a TODO;
+    # neither is this extension's own description
+    printf '%s' "$rest" | grep -qE "[\`'\"]($markers):" && continue
+    printf '%s' "$rest" | grep -qE "@about|@name" && continue
+    text=$(printf '%s' "$rest" | sed -E "s/.*\\b($(echo "$words" | tr ',' '|')):[[:space:]]*//; s/[[:space:]]*(\\*\\/|-->|#\\})?[[:space:]]*\$//")
+    [ -z "$text" ] && continue
+    marker=$(printf '%s' "$rest" | grep -oE "\\b($(echo "$words" | tr ',' '|')):" | head -1 | tr -d ':')
+    # the project is the first folder under whichever root holds the file
+    project=""
+    for r in "${dirs[@]}"; do
+        case $file in "$r"/*)
+            top=$(git -C "$r" rev-parse --show-toplevel 2>/dev/null || true)
+            if [ -n "$top" ] && [ "$top" != "$(dirname "$file")" ] && case $r in "$top"|"$top"/*) true ;; *) false ;; esac; then
+                # the root is (inside) one repository: that repository is the project
+                project=$(basename "$top")
+            else
+                project=${file#"$r"/}; project=${project%%/*}
+            fi ;;
+        esac
+    done
+    key=$(printf '%s|%s' "$file" "$text" | md5sum | cut -c1-16)
+    jq -cn --arg key "$key" --arg title "$text" --arg file "$file" --arg line "$line" \
+          --arg project "$project" --arg marker "$marker" \
+        '{key: $key, title: $title, project: $project,
+          tags: ["code", ($marker | ascii_downcase)],
+          priority: (if $marker == "FIXME" then "high" else "normal" end),
+          url: ("file://" + $file + ":" + $line),
+          notes: ($marker + " in " + $file + ":" + $line)}'
+done

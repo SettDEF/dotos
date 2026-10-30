@@ -1,0 +1,33 @@
+[Desktop Entry]
+Type=Application
+Name=Dotos
+GenericName=Work & Life Organizer
+Comment=Tasks, projects, AI agents, habits, journal and pages in one place
+Exec=dotos-gui
+Icon=dotos
+Terminal=false
+Categories=Office;ProjectManagement;
+Keywords=tasks;todo;projects;agents;claude;habits;journal;notes;pages;kanban;board;time;timewarrior;
+StartupNotify=true
+StartupWMClass=dotos
+Actions=Capture;Today;Board;Agents;Journal;
+
+[Desktop Action Capture]
+Name=New task
+Exec=dotos-gui capture
+
+[Desktop Action Today]
+Name=Today
+Exec=dotos-gui home
+
+[Desktop Action Board]
+Name=Board
+Exec=dotos-gui board
+
+[Desktop Action Agents]
+Name=Agents
+Exec=dotos-gui agents
+
+[Desktop Action Journal]
+Name=Today's journal
+Exec=dotos-gui journal

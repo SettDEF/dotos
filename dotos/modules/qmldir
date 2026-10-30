@@ -1,0 +1,42 @@
+singleton Console 1.0 Console.qml
+singleton Prefs 1.0 Prefs.qml
+singleton Nav 1.0 Nav.qml
+singleton Store 1.0 Store.qml
+Label 1.0 Label.qml
+Sheet 1.0 Sheet.qml
+MoreMenu 1.0 MoreMenu.qml
+ShortcutsSheet 1.0 ShortcutsSheet.qml
+Toolbar 1.0 Toolbar.qml
+Sidebar 1.0 Sidebar.qml
+SpiderWebChart 1.0 SpiderWebChart.qml
+Panel 1.0 Panel.qml
+Tag 1.0 Tag.qml
+CaptureField 1.0 CaptureField.qml
+ChangesPage 1.0 ChangesPage.qml
+RecentChanges 1.0 RecentChanges.qml
+TaskRow 1.0 TaskRow.qml
+TaskInspector 1.0 TaskInspector.qml
+TagsPage 1.0 TagsPage.qml
+TasksPage 1.0 TasksPage.qml
+HomePage 1.0 HomePage.qml
+ProjectsPage 1.0 ProjectsPage.qml
+ProjectPage 1.0 ProjectPage.qml
+AgentsPage 1.0 AgentsPage.qml
+BoardPage 1.0 BoardPage.qml
+HabitsPage 1.0 HabitsPage.qml
+PagesPage 1.0 PagesPage.qml
+HistoryPage 1.0 HistoryPage.qml
+ExtensionsPage 1.0 ExtensionsPage.qml
+SettingsPage 1.0 SettingsPage.qml
+Toggle 1.0 Toggle.qml
+Palette 1.0 Palette.qml
+PlanPage 1.0 PlanPage.qml
+GraphPage 1.0 GraphPage.qml
+BarChart 1.0 BarChart.qml
+InsightsPage 1.0 InsightsPage.qml
+TaskMenu 1.0 TaskMenu.qml
+LocalGraph 1.0 LocalGraph.qml
+AgentActions 1.0 AgentActions.qml
+TaskThread 1.0 TaskThread.qml
+StatusIndicator 1.0 StatusIndicator.qml
+TerminalView 1.0 TerminalView.qml
