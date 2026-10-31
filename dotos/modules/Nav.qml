@@ -55,6 +55,7 @@ Singleton {
         { key: "projects",   label: qsTr("Projects"),   icon: "deployed_code",  group: "work", url: "ProjectsPage.qml" },
         { key: "project",    label: qsTr("Project"),    icon: "folder_open",    group: "hidden", url: "ProjectPage.qml" },
         { key: "agents",     label: qsTr("Agents"),     icon: "smart_toy",      group: "work", url: "AgentsPage.qml" },
+        { key: "team",       label: qsTr("Team"),       icon: "groups",         group: "work", url: "TeamPage.qml" },
         { key: "tasks",      label: qsTr("Tasks"),      icon: "check_circle",   group: "life", url: "TasksPage.qml" },
         { key: "plan",       label: qsTr("Plan"),       icon: "event_available", group: "life", url: "PlanPage.qml" },
         { key: "board",      label: qsTr("Board"),      icon: "view_kanban",    group: "hidden", url: "BoardPage.qml" },

@@ -1,6 +1,7 @@
 singleton Console 1.0 Console.qml
 singleton Prefs 1.0 Prefs.qml
 singleton Nav 1.0 Nav.qml
+singleton Team 1.0 Team.qml
 singleton Store 1.0 Store.qml
 Label 1.0 Label.qml
 Sheet 1.0 Sheet.qml
@@ -40,3 +41,8 @@ AgentActions 1.0 AgentActions.qml
 TaskThread 1.0 TaskThread.qml
 StatusIndicator 1.0 StatusIndicator.qml
 TerminalView 1.0 TerminalView.qml
+TeamAvatar 1.0 TeamAvatar.qml
+TeamList 1.0 TeamList.qml
+TeamPeople 1.0 TeamPeople.qml
+TeamConversation 1.0 TeamConversation.qml
+TeamPage 1.0 TeamPage.qml
