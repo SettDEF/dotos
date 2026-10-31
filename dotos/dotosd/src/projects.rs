@@ -1,9 +1,11 @@
 //! Projects: the folders you work in, found rather than declared.
 //!
-//! A project is a folder under a project root (default /mnt/storage/dev/projects)
-//! that has a .git, a TASKS.md, a PLAN.md or a README — plus any folder listed in
-//! config.json "projects". Its tasks are the Dotos tasks tagged +project and the
-//! open `- [ ]` lines of its TASKS.md; its health comes from git and those.
+//! A project is a folder under a project root (paths::project_roots) that has a .git,
+//! a TASKS.md, a PLAN.md or a README — plus any folder listed in config.json "projects".
+//! Found is not taken on (project_conf, CLI.md §6): `discover` gives the tracked ones,
+//! `discover_all` everything found that is not ignored. Its tasks are the Dotos tasks
+//! tagged +project and the open `- [ ]` lines of its TASKS.md; its health comes from git
+//! (where its `git` option is on) and those.
 
 use crate::paths;
 use serde::Serialize;
@@ -52,21 +54,30 @@ fn is_project(p: &Path) -> bool {
     ["/.git", "/TASKS.md", "/PLAN.md", "/README.md", "/Cargo.toml"].iter().any(|f| Path::new(&format!("{}{}", p.display(), f)).exists())
 }
 
+/// The projects Dotos has taken on (the mode, `track`, minus `ignored`).
 pub fn discover() -> Vec<PathBuf> {
+    let c = crate::project_conf::load();
+    discover_all().into_iter().filter(|p| c.is_tracked(p)).collect()
+}
+
+/// Every project found under the roots that is not ignored, tracked or not.
+pub fn discover_all() -> Vec<PathBuf> {
+    let c = crate::project_conf::load();
     let mut out = Vec::new();
     for root in paths::project_roots() {
         if let Ok(rd) = std::fs::read_dir(&root) {
             for e in rd.flatten() {
                 let p = e.path();
                 let name = e.file_name().to_string_lossy().to_string();
-                if p.is_dir() && !name.starts_with('.') && is_project(&p) {
+                // a linked worktree (.git is a file) is a copy of a project, not one more
+                if p.is_dir() && !name.starts_with('.') && is_project(&p) && !p.join(".git").is_file() && !c.is_ignored(&p) {
                     out.push(p);
                 }
             }
         }
     }
     for p in paths::project_extra() {
-        if p.is_dir() && !out.contains(&p) {
+        if p.is_dir() && !out.contains(&p) && !c.is_ignored(&p) {
             out.push(p);
         }
     }
@@ -177,7 +188,7 @@ pub fn load(dir: &Path, with_git: bool) -> Project {
     Project {
         name,
         path: dir.display().to_string(),
-        git: if with_git { git_state(dir) } else { None },
+        git: if with_git && crate::project_conf::load().on(dir, "git") { git_state(dir) } else { None },
         doc_open: doc_tasks.iter().filter(|t| !t.done).count(),
         docs,
         doc_tasks,
@@ -186,7 +197,7 @@ pub fn load(dir: &Path, with_git: bool) -> Project {
 }
 
 pub fn find(name: &str) -> Option<PathBuf> {
-    discover().into_iter().find(|p| p.file_name().is_some_and(|n| n.to_string_lossy().eq_ignore_ascii_case(name)))
+    discover_all().into_iter().find(|p| p.file_name().is_some_and(|n| n.to_string_lossy().eq_ignore_ascii_case(name)))
 }
 
 /// Tick or untick line `line` of a project's TASKS.md.

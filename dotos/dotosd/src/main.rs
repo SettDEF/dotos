@@ -30,6 +30,8 @@ mod pages;
 mod paths;
 mod plan;
 mod projects;
+mod project_conf;
+mod cli_project;
 mod query;
 mod recurrence;
 mod tags;
@@ -149,7 +151,8 @@ v2
   dotos tracked ID            seconds tracked on a task, ever
   dotos undo [--by ai] [--dry]  undo the last change (anyone's, or one author's); --dry only says what
   dotos log [N] [--task ID]   the change log
-  dotos projects              projects under the roots, with git state
+  dotos projects              the tracked projects, with git state
+  dotos project …             which projects Dotos takes on, and how (dotos project --help)
   dotos git ...               remote git: PRs, issues, branches, commits, CI
   dotos tag ...               custom tags: add, edit, rm, list, spinweb
   dotos diff [--json] [--working] [--agents] [--file PATH] [--since TS]
@@ -722,6 +725,7 @@ fn main() {
                 }
             }
         },
+        "project" => cli_project::run(&rest[1..], json),
         "projects" => {
             let v: Vec<_> = projects::discover().iter().map(|d| projects::load(d, true)).collect();
             if json { println!("{}", serde_json::to_string(&v).unwrap_or_default()); }
