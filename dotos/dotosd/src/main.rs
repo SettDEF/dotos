@@ -32,6 +32,7 @@ mod plan;
 mod projects;
 mod project_conf;
 mod cli_project;
+mod cli_route;
 mod query;
 mod recurrence;
 mod tags;
@@ -214,6 +215,12 @@ fn main() {
         print!("{TEAM_HELP}");
         return;
     }
+    // the syntax in front of everything (CLI.md §2, §5): --k=v, short flags, aliases, noun verb,
+    // your own dotos-NAME commands, "did you mean"
+    let args = match cli_route::route(args.clone(), args.iter().any(|a| a == "--json" || a == "-j")) {
+        cli_route::Route::Args(a) => a,
+        cli_route::Route::Exit(code) => std::process::exit(code),
+    };
     if args.first().map(|a| a == "-h" || a == "--help").unwrap_or(false) {
         print!("{USAGE}");
         return;
