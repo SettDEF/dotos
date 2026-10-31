@@ -17,6 +17,10 @@ pub struct Me {
     /// #rrggbb for the avatar dot
     #[serde(default)]
     pub color: String,
+    /// the same person on GitHub ("SettDEF"): a mention, an assignment and a review request then
+    /// meet whether they came from Dotos or GitHub. Travels with the rest when teammates meet.
+    #[serde(default)]
+    pub github: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,12 +73,16 @@ pub fn me() -> Me {
     m
 }
 
-/// `dotos me [--name N] [--handle H] [--color #hex]`
-pub fn set_me(name: Option<String>, handle: Option<String>, color: Option<String>) -> std::io::Result<Me> {
+/// `dotos me [--name N] [--handle H] [--color #hex] [--github LOGIN|auto]`
+pub fn set_me(name: Option<String>, handle: Option<String>, color: Option<String>, github: Option<String>) -> std::io::Result<Me> {
     let mut m = me();
     if let Some(v) = name { m.name = v; }
     if let Some(v) = handle { m.handle = v.trim_start_matches('@').to_string(); }
     if let Some(v) = color { m.color = v; }
+    if let Some(v) = github {
+        // auto: who gh is signed in as, asked once and kept
+        m.github = if v == "auto" { github_login().ok_or_else(|| std::io::Error::other("gh is not signed in (gh auth login)"))? } else { v.trim_start_matches('@').to_string() };
+    }
     std::fs::create_dir_all(crate::paths::config_dir())?;
     std::fs::write(me_file(), serde_json::to_string_pretty(&m).unwrap_or_default())?;
     Ok(m)
@@ -223,6 +231,15 @@ mod tests {
     }
 
     #[test]
+    fn me_without_github_still_reads() {
+        // a teammate on an older Dotos introduces itself without the field
+        let m: Me = serde_json::from_str(r#"{"handle":"caesar","name":"Caesar","color":""}"#).unwrap();
+        assert_eq!((m.handle.as_str(), m.github.as_str()), ("caesar", ""));
+        let m: Me = serde_json::from_str(r#"{"handle":"caesar","name":"Caesar","github":"SettDEF"}"#).unwrap();
+        assert_eq!(m.github, "SettDEF");
+    }
+
+    #[test]
     fn item_keys() {
         assert_eq!(item_key("abc123"), "task:abc123");
         assert_eq!(item_key("project:loom"), "project:loom");
@@ -308,6 +325,24 @@ pub fn people() -> Vec<Me> {
     v.retain(|p| p.handle != me.handle);
     v.insert(0, me);
     v
+}
+
+/// The GitHub login gh is signed in as.
+fn github_login() -> Option<String> {
+    let o = std::process::Command::new("gh").args(["api", "user", "--jq", ".login"]).output().ok()?;
+    let l = String::from_utf8_lossy(&o.stdout).trim().to_string();
+    (o.status.success() && !l.is_empty()).then_some(l)
+}
+
+/// The teammate who is `login` on GitHub (any case), when they said so.
+pub fn by_github(login: &str) -> Option<Me> {
+    people().into_iter().find(|p| !p.github.is_empty() && p.github.eq_ignore_ascii_case(login))
+}
+
+/// The GitHub login of the teammate with Dotos `handle`, when known.
+pub fn github_of(handle: &str) -> Option<String> {
+    let h = handle.trim_start_matches('@');
+    people().into_iter().find(|p| p.handle.eq_ignore_ascii_case(h)).map(|p| p.github).filter(|g| !g.is_empty())
 }
 
 /// A teammate as their Dotos introduced itself.

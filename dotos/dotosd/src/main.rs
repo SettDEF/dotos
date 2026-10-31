@@ -99,7 +99,7 @@ const TEAM_HELP: &str = "\
 dotos — a team on your network (no server, no account)
 
 Add a friend:
-  1. once per computer:   dotos me --handle caesar --name Caesar
+  1. once per computer:   dotos me --handle caesar --name Caesar --github auto   (auto: gh's login)
   2. one person:          dotos lan init \"Our team\"
                           dotos lan invite          a six-digit code, for 10 minutes
   3. each friend:         dotos lan join 482913     that code, on the same network
@@ -268,10 +268,10 @@ fn main() {
         },
         // Teams 1 (docs/teams.md): who you are, and the conversation on an item
         "me" => {
-            let (n, h, c) = (flag(&rest, "--name"), flag(&rest, "--handle"), flag(&rest, "--color"));
-            let got = if n.is_some() || h.is_some() || c.is_some() { threads::set_me(n, h, c) } else { Ok(threads::me()) };
+            let (n, h, c, g) = (flag(&rest, "--name"), flag(&rest, "--handle"), flag(&rest, "--color"), flag(&rest, "--github"));
+            let got = if n.is_some() || h.is_some() || c.is_some() || g.is_some() { threads::set_me(n, h, c, g) } else { Ok(threads::me()) };
             match got {
-                Ok(m) => { if json { println!("{}", serde_json::to_string(&m).unwrap_or_default()); } else { println!("{} (@{})", m.name, m.handle); } 0 }
+                Ok(m) => { if json { println!("{}", serde_json::to_string(&m).unwrap_or_default()); } else { println!("{} (@{}){}", m.name, m.handle, if m.github.is_empty() { String::new() } else { format!("  github: {}", m.github) }); } 0 }
                 Err(e) => { eprintln!("dotos: {e}"); 1 }
             }
         }
@@ -372,7 +372,7 @@ fn main() {
                 let agents: Vec<String> = std::iter::once("claude".to_string()).chain(people.iter().map(|p| format!("claude@{}", p.handle))).collect();
                 println!("{}", serde_json::json!({ "people": people, "agents": agents }));
             } else {
-                for p in &people { println!("@{}  {}", p.handle, p.name); }
+                for p in &people { println!("@{}  {}{}", p.handle, p.name, if p.github.is_empty() { String::new() } else { format!("  (github: {})", p.github) }); }
             }
             0
         }
