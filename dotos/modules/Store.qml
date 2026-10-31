@@ -38,6 +38,10 @@ Singleton {
     readonly property var open: root.tasks.filter(t => t.state !== "done" && t.state !== "cancelled")
     readonly property var lists: root.snap?.lists ?? []
     readonly property var projects: root.snap?.projects ?? []
+    /// found under the roots, not yet tracked or ignored (the Projects page offers them)
+    readonly property var newProjects: root.snap?.new_projects ?? []
+    /// all | ask | manual: how a newly found project is treated
+    readonly property string projectMode: root.snap?.project_mode ?? "all"
     readonly property var agents: root.snap?.agents ?? []
     readonly property var liveAgents: root.agents.filter(a => a.state !== "ended")
     readonly property var needsYou: root.liveAgents.filter(a => a.state === "needs_you")

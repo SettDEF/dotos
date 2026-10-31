@@ -125,7 +125,8 @@ Item {
                 { icon: "terminal", tip: qsTr("Terminal here"), run: () => App.Store.terminalAt(acts.p.path) },
                 { icon: "code", tip: qsTr("zett here"), run: () => Quickshell.execDetached([App.Store.zash, "-d", acts.p.path, "-e", App.Store.zett + " ."]) },
                 { icon: "folder_open", tip: qsTr("Open the folder"), run: () => App.Store.openFolder(acts.p.path) },
-                { icon: "add_task", tip: qsTr("New task in this project"), run: () => { App.Nav.openProject(acts.p.name); Qt.callLater(() => App.Nav.action("capture")); } }
+                { icon: "add_task", tip: qsTr("New task in this project"), run: () => { App.Nav.openProject(acts.p.name); Qt.callLater(() => App.Nav.action("capture")); } },
+                { icon: "tune", tip: qsTr("What Dotos does with it"), run: () => settings.show(acts.p) }
             ]
             delegate: Rectangle {
                 required property var modelData
@@ -337,6 +338,91 @@ Item {
                 width: flick.width - 40
                 spacing: 12
 
+                // found, not decided: take it on or leave it (CLI.md §6, `dotos project`)
+                Rectangle {
+                    // always: it is where you choose how new folders are treated
+                    Layout.fillWidth: true
+                    implicitHeight: newCol.implicitHeight + 24
+                    radius: App.Console.radius
+                    color: App.Console.panel
+                    border.width: 1; border.color: App.Console.rule
+                    ColumnLayout {
+                        id: newCol
+                        x: 14; y: 12; width: parent.width - 28
+                        spacing: 10
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 10
+                            Ui.Icon { text: "travel_explore"; size: 18; color: App.Console.data }
+                            Text {
+                                Layout.fillWidth: true
+                                text: App.Store.newProjects.length > 0 ? (App.Store.newProjects.length === 1 ? qsTr("1 new project found") : qsTr("%1 new projects found").arg(App.Store.newProjects.length)) : App.Store.projectMode === "all" ? qsTr("Every project found is taken on") : qsTr("Projects are taken on only when you choose")
+                                color: App.Console.text; font.pixelSize: 14; font.weight: Font.DemiBold
+                                wrapMode: Text.Wrap
+                            }
+                        }
+                        // its own line: beside the title it ran over it on a half-width window
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 10
+                            Text { text: qsTr("New folders:"); color: App.Console.dim; font.pixelSize: 12 }
+                            Ui.SegmentedControl {
+                                implicitWidth: 210
+                                model: [{ key: "all", label: qsTr("Take all") }, { key: "ask", label: qsTr("Ask") }, { key: "manual", label: qsTr("Manual") }]
+                                current: App.Store.projectMode
+                                onPicked: k => App.Store.run(["project", "mode", k], k === "all" ? qsTr("Every project found is taken on") : k === "ask" ? qsTr("New projects wait for you") : qsTr("Only projects you track"), () => App.Store.reload(true))
+                            }
+                        }
+                        Text {
+                            visible: App.Store.newProjects.length > 0
+                            Layout.fillWidth: true
+                            text: qsTr("Track one to see its tasks, page and git state here. Ignore hides it for good.")
+                            color: App.Console.dim; font.pixelSize: 12; wrapMode: Text.Wrap
+                        }
+                        Flow {
+                            visible: App.Store.newProjects.length > 0
+                            Layout.fillWidth: true
+                            spacing: 8
+                            Repeater {
+                                model: App.Store.newProjects
+                                delegate: Rectangle {
+                                    required property var modelData
+                                    implicitWidth: npRow.implicitWidth + 16; implicitHeight: 34; radius: 17
+                                    color: App.Console.bg; border.width: 1; border.color: App.Console.ruleStrong
+                                    RowLayout {
+                                        id: npRow
+                                        anchors.centerIn: parent
+                                        spacing: 4
+                                        Ui.Icon { text: "folder"; size: 15; color: App.Console.dim; Layout.leftMargin: 4 }
+                                        Text { text: modelData.name; color: App.Console.text; font.pixelSize: 13; Layout.rightMargin: 4 }
+                                        Repeater {
+                                            model: [{ icon: "add", tip: qsTr("Track it"), args: ["project", "track", modelData.path], ok: qsTr("Tracking %1").arg(modelData.name) },
+                                                    { icon: "visibility_off", tip: qsTr("Ignore it"), args: ["project", "ignore", modelData.name], ok: qsTr("Ignoring %1").arg(modelData.name) }]
+                                            delegate: Rectangle {
+                                                required property var modelData
+                                                width: 24; height: 24; radius: 12
+                                                color: nbHov.hovered ? App.Console.panelAlt : "transparent"
+                                                Ui.Icon { anchors.centerIn: parent; text: modelData.icon; size: 15; color: nbHov.hovered ? App.Console.text : App.Console.dim }
+                                                HoverHandler { id: nbHov; cursorShape: Qt.PointingHandCursor }
+                                                TapHandler { onTapped: App.Store.run(modelData.args, modelData.ok, () => App.Store.reload(true)) }
+                                                Ui.Tip { visible: nbHov.hovered; delay: 300; text: modelData.tip }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            Rectangle {
+                                visible: App.Store.newProjects.length > 1
+                                implicitWidth: allText.implicitWidth + 24; implicitHeight: 34; radius: 17
+                                color: allHov.hovered ? Qt.lighter(App.Console.data, 1.1) : App.Console.data
+                                Text { id: allText; anchors.centerIn: parent; text: qsTr("Track all"); color: App.Console.onData; font.pixelSize: 13; font.weight: Font.DemiBold }
+                                HoverHandler { id: allHov; cursorShape: Qt.PointingHandCursor }
+                                TapHandler { onTapped: App.Store.run(["project", "track"].concat(App.Store.newProjects.map(p => p.path)), qsTr("Tracking %1 projects").arg(App.Store.newProjects.length), () => App.Store.reload(true)) }
+                            }
+                        }
+                    }
+                }
+
                 // a filter: everything it matches, as cards
                 Cards { visible: page.shown !== null; items: page.shown ?? [] }
 
@@ -358,6 +444,88 @@ Item {
                     font.family: App.Console.sans; font.pixelSize: 14; color: App.Console.dim
                 }
 
+            }
+        }
+    }
+
+    // what Dotos does with one project: `dotos project set NAME key=value` (CLI.md §6)
+    Popup {
+        id: settings
+        property var p: null
+        readonly property var opt: settings.p?.options ?? ({})
+        function show(p) { settings.p = p; settings.open(); }
+        function set(k, v) { App.Store.run(["project", "set", settings.p.name, k + "=" + v], qsTr("%1: %2 %3").arg(settings.p.name).arg(k).arg(v), () => App.Store.reload(true)); }
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        width: 420
+        padding: 18
+        background: Rectangle { radius: 12; color: App.Console.panelAlt; border.width: 1; border.color: App.Console.ruleStrong }
+        contentItem: ColumnLayout {
+            spacing: 10
+            RowLayout {
+                Layout.fillWidth: true
+                Ui.Icon { text: "tune"; size: 18; color: App.Console.data }
+                Text { Layout.fillWidth: true; text: settings.p?.name ?? ""; color: App.Console.text; font.pixelSize: 19; font.weight: Font.DemiBold; elide: Text.ElideRight }
+            }
+            Text { Layout.fillWidth: true; text: settings.p?.path ?? ""; color: App.Console.faint; font.pixelSize: 12; elide: Text.ElideMiddle }
+            Repeater {
+                model: [
+                    { key: "git", label: qsTr("Git state"), note: qsTr("branch, changes, commits; off saves time on slow laptops") },
+                    { key: "github", label: qsTr("GitHub"), note: qsTr("its pull requests, issues and CI in Dotos") },
+                    { key: "todos", label: qsTr("TODO comments"), note: qsTr("TODO and FIXME lines become tasks") },
+                    { key: "sync", label: qsTr("Sync to my laptops"), note: qsTr("its tasks and chats on your other machines") },
+                    { key: "pin", label: qsTr("Pinned"), note: qsTr("first in lists") }
+                ]
+                delegate: RowLayout {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    spacing: 12
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 1
+                        Text { text: modelData.label; color: App.Console.text; font.pixelSize: 13 }
+                        Text { Layout.fillWidth: true; text: modelData.note; color: App.Console.dim; font.pixelSize: 11; wrapMode: Text.Wrap }
+                    }
+                    App.Toggle { on: settings.opt[modelData.key] === "on"; onToggled: v => settings.set(modelData.key, v ? "on" : "off") }
+                }
+            }
+            Repeater {
+                model: [
+                    { key: "agents", label: qsTr("Agents"), choices: [{ key: "allow", label: qsTr("Allow") }, { key: "ask", label: qsTr("Ask") }, { key: "deny", label: qsTr("Deny") }] },
+                    { key: "notify", label: qsTr("Notify me"), choices: [{ key: "all", label: qsTr("All") }, { key: "mentions", label: qsTr("Mentions") }, { key: "none", label: qsTr("None") }] }
+                ]
+                delegate: RowLayout {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    Text { Layout.fillWidth: true; text: modelData.label; color: App.Console.text; font.pixelSize: 13 }
+                    Ui.SegmentedControl {
+                        implicitWidth: 210
+                        model: modelData.choices
+                        current: settings.opt[modelData.key] ?? ""
+                        onPicked: k => settings.set(modelData.key, k)
+                    }
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.topMargin: 6
+                spacing: 8
+                Text { Layout.fillWidth: true; text: qsTr("Or in a terminal: dotos project set %1 key=value").arg(settings.p?.name ?? ""); color: App.Console.faint; font.pixelSize: 11; font.family: App.Console.mono; elide: Text.ElideRight }
+                Rectangle {
+                    implicitWidth: unText.implicitWidth + 22; implicitHeight: 30; radius: 7
+                    color: unHov.hovered ? Qt.alpha(App.Console.crit, 0.15) : "transparent"; border.width: 1; border.color: App.Console.ruleStrong
+                    Text { id: unText; anchors.centerIn: parent; text: qsTr("Stop tracking"); color: App.Console.crit; font.pixelSize: 12; font.weight: Font.DemiBold }
+                    HoverHandler { id: unHov; cursorShape: Qt.PointingHandCursor }
+                    TapHandler {
+                        onTapped: {
+                            const n = settings.p.name;
+                            // in "all" mode untracking alone does nothing: it is ignored instead
+                            App.Store.run(["project", App.Store.projectMode === "all" ? "ignore" : "untrack", n], qsTr("No longer tracking %1").arg(n), () => App.Store.reload(true));
+                            settings.close();
+                        }
+                    }
+                }
             }
         }
     }

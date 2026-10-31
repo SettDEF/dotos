@@ -439,6 +439,7 @@ pub fn snapshot(store: &Store, with_git: bool) -> Value {
         lists.entry(c.name).or_default();
     }
 
+    let pconf = crate::project_conf::load();
     let projects: Vec<Value> = projects::discover().iter().map(|dir| {
         let p = projects::load(dir, with_git);
         let open: Vec<&Todo> = todos.iter().filter(|t| t.is_open() && model::get(t, "PROJECT").is_some_and(|x| x.eq_ignore_ascii_case(&p.name))).collect();
@@ -456,6 +457,7 @@ pub fn snapshot(store: &Store, with_git: bool) -> Value {
         // (committed in the last two weeks); old dirt in a dormant repo is just quiet
         let recent = p.git.as_ref().is_some_and(|g| chrono::Utc::now().timestamp() - g.last_time < 14 * 86400);
         let dirty_days = p.git.as_ref().map_or(0, |g| if g.dirty > 0 { g.dirty_days } else { 0 });
+        v["options"] = json!(crate::project_conf::KEYS.iter().map(|(k, _, _)| (k.to_string(), json!(pconf.get(dir, k).0))).collect::<serde_json::Map<_, _>>());
         v["health"] = json!(if needs > 0 || overdue > 0 { "attention" } else if dirty_days >= 3 && recent { "stale" }
             else if !ag.is_empty() || p.git.as_ref().is_some_and(|g| g.commits_week > 0) { "active" } else { "quiet" });
         v
@@ -472,6 +474,11 @@ pub fn snapshot(store: &Store, with_git: bool) -> Value {
         "tasks": tasks,
         "lists": lists.iter().map(|(n, (o, d))| json!({ "name": n, "open": o, "done": d })).collect::<Vec<_>>(),
         "projects": projects,
+        // which projects Dotos takes on (the Projects page lets you choose: CLI.md §6)
+        "project_mode": pconf.mode.clone(),
+        "new_projects": projects::discover_all().iter().filter(|d| !pconf.is_tracked(d))
+            .map(|d| json!({ "name": d.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default(), "path": d.to_string_lossy() }))
+            .collect::<Vec<_>>(),
         "agents": agents,
         "time": time,
         "pages": pages,
