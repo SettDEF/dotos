@@ -44,8 +44,9 @@ pub fn config() -> serde_json::Value {
         .unwrap_or(serde_json::Value::Null)
 }
 
-/// Folders whose subfolders are projects. Default: the dev projects root
-/// and the quickshell config.
+/// Folders whose subfolders are projects. Default: $PROJECTS_DIR, then the usual places for
+/// source trees, those that exist (only /mnt/storage/dev/projects was looked at, which is one
+/// machine's data disk: elsewhere Projects and GitHub were empty).
 pub fn project_roots() -> Vec<PathBuf> {
     let cfg = config();
     if let Some(a) = cfg["projectRoots"].as_array() {
@@ -54,7 +55,11 @@ pub fn project_roots() -> Vec<PathBuf> {
             return v;
         }
     }
-    vec![PathBuf::from("/mnt/storage/dev/projects")]
+    let mut v: Vec<PathBuf> = std::env::var("PROJECTS_DIR").ok().filter(|s| !s.is_empty()).map(|s| expand(&s)).into_iter().collect();
+    v.extend(["/mnt/storage/dev/projects", "~/.local/src", "~/projects", "~/src", "~/code", "~/dev"].iter().map(|p| expand(p)));
+    let mut seen = std::collections::HashSet::new();
+    v.retain(|p| p.is_dir() && seen.insert(std::fs::canonicalize(p).unwrap_or_else(|_| p.clone())));
+    if v.is_empty() { vec![PathBuf::from("/mnt/storage/dev/projects")] } else { v }
 }
 
 /// Single folders that are projects themselves (not roots of projects).
