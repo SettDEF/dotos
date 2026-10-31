@@ -22,6 +22,7 @@ Singleton {
     property alias showDone: adapter.showDone
     property alias inspectorOpen: adapter.inspectorOpen
     property alias projectsSort: adapter.projectsSort
+    property alias githubRepo: adapter.githubRepo
     property alias homeCards: adapter.homeCards
     property alias homeLayout: adapter.homeLayout
     property alias arrangeStyle: adapter.arrangeStyle
@@ -60,6 +61,7 @@ Singleton {
             property bool showDone: false
             property bool inspectorOpen: true
             property string projectsSort: "health" // health | name | recent
+            property string githubRepo: ""         // the GitHub page's repository, owner/name
             property var homeCards: ({})
             property string homeLayout: ""            // JSON: [{ id, col, row, w, h }] on a 12-column grid
             property string arrangeStyle: "border"     // border | snap — how cards are grabbed while arranging
