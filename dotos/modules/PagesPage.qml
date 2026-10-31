@@ -62,11 +62,12 @@ Item {
             title: page.journal ? qsTr("Journal") : qsTr("Pages")
             subtitle: page.journal ? qsTr("%1 days written").arg(page.list.length) : qsTr("%1 pages · %2 open checkboxes").arg(page.list.length).arg(App.Store.pageTasks.length)
             Rectangle {
-                implicitWidth: 200; implicitHeight: 36; radius: 18
-                color: App.Console.panelAlt
+                implicitWidth: 196; implicitHeight: 28; radius: 14
+                color: Qt.alpha(App.Console.text, 0.05)
                 RowLayout {
-                    anchors { fill: parent; leftMargin: 12; rightMargin: 8 }
-                    Ui.Icon { text: "search"; size: 17; color: App.Console.faint }
+                    anchors { fill: parent; leftMargin: 10; rightMargin: 6 }
+                    spacing: 6
+                    Ui.Icon { text: "search"; size: 15; color: App.Console.faint }
                     TextField {
                         ContextMenu.menu: Ui.TextMenu { target: search }
                         id: search
@@ -75,13 +76,13 @@ Item {
                         placeholderTextColor: App.Console.faint
                         background: null
                         color: App.Console.text
-                        font.family: App.Console.sans; font.pixelSize: 14
+                        font.family: App.Console.sans; font.pixelSize: 12
                         onTextChanged: page.filter = text
                     }
                 }
             }
             Rectangle {
-                implicitWidth: newRow.implicitWidth + 26; implicitHeight: 36; radius: 18
+                implicitWidth: newRow.implicitWidth + 24; implicitHeight: 28; radius: 14
                 color: App.Console.data
                 HoverHandler { cursorShape: Qt.PointingHandCursor }
                 TapHandler {
@@ -92,8 +93,8 @@ Item {
                     id: newRow
                     anchors.centerIn: parent
                     spacing: 6
-                    Ui.Icon { anchors.verticalCenter: parent.verticalCenter; text: page.journal ? "today" : "note_add"; size: 18; color: App.Console.onData }
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: page.journal ? qsTr("Today") : qsTr("New page"); font.family: App.Console.sans; font.pixelSize: 14; font.weight: Font.DemiBold; color: App.Console.onData }
+                    Ui.Icon { anchors.verticalCenter: parent.verticalCenter; text: page.journal ? "today" : "note_add"; size: 16; color: App.Console.onData }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: page.journal ? qsTr("Today") : qsTr("New page"); font.family: App.Console.sans; font.pixelSize: 13; font.weight: Font.DemiBold; color: App.Console.onData }
                 }
             }
         }

@@ -171,6 +171,35 @@ Rectangle {
         }
     }
 
+    // a cell of the footer: an icon, its count as a small badge, a tip above it
+    component FootCell: Rectangle {
+        id: fc
+        required property var page
+        readonly property var c: root.count(fc.page.key)
+        readonly property bool sel: App.Nav.page === fc.page.key
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        color: fc.sel ? Qt.alpha(App.Console.data, 0.16) : fHov.hovered ? Qt.alpha(App.Console.text, 0.07) : "transparent"
+        Behavior on color { ColorAnimation { duration: 120 } }
+        HoverHandler { id: fHov; cursorShape: Qt.PointingHandCursor }
+        TapHandler { onTapped: App.Nav.go(fc.page.key) }
+        Ui.Tip { visible: fHov.hovered; delay: 300; y: -height - 6; text: fc.c.n > 0 ? `${fc.page.label}  ·  ${fc.c.n}` : fc.page.label }
+        Ui.Icon {
+            anchors.centerIn: parent
+            text: fc.page.icon
+            size: 17
+            filled: fc.sel
+            color: fc.sel ? App.Console.data : App.Console.dim
+        }
+        Rectangle {
+            visible: fc.c.n > 0
+            anchors { horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: 8; verticalCenter: parent.verticalCenter; verticalCenterOffset: -6 }
+            implicitWidth: Math.max(14, fcn.implicitWidth + 6); implicitHeight: 14; radius: 7
+            color: fc.c.alert ? App.Console.crit : Qt.alpha(App.Console.text, 0.14)
+            Text { id: fcn; anchors.centerIn: parent; text: fc.c.n; font.family: App.Console.mono; font.pixelSize: 9; font.weight: Font.DemiBold; color: fc.c.alert ? App.Console.bg : App.Console.dim }
+        }
+    }
+
     component Group: Item {
         id: grp
         property string label: ""
@@ -213,7 +242,7 @@ Rectangle {
     }
 
     ColumnLayout {
-        anchors { fill: parent; margins: 10; topMargin: 14 }
+        anchors { left: parent.left; right: parent.right; top: parent.top; bottom: footer.top; margins: 10; topMargin: 14 }
         spacing: 2
 
         RowLayout {
@@ -366,24 +395,24 @@ Rectangle {
             }
         }
 
-        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: App.Console.rule; Layout.bottomMargin: 6 }
-        // the bottom entries side by side (Settings, …); narrow, the plain list
+    }
+
+    // the footer: the same 26 px band as the status bar under the page, on the
+    // same line, so the two read as one footer across the window
+    Rectangle {
+        id: footer
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        height: 26
+        color: App.Console.panel
+        Rectangle { anchors { left: parent.left; right: parent.right; top: parent.top } height: 1; color: App.Console.rule }
         RowLayout {
-            visible: !root.collapsed
-            Layout.fillWidth: true
-            spacing: 6
+            anchors { fill: parent; topMargin: 1 }
+            spacing: 0
             Repeater {
                 model: App.Nav.pages.filter(p => p.group === "foot" || p.key === "extensions")
-                Tile {
-                    required property var modelData
-                    readonly property var c: root.count(modelData.key)
-                    icon: modelData.icon; tip: modelData.label; n: c.n; alert: c.alert
-                    sel: App.Nav.page === modelData.key
-                    onHit: App.Nav.go(modelData.key)
-                }
+                FootCell { required property var modelData; page: modelData }
             }
         }
-        Repeater { model: root.collapsed ? App.Nav.pages.filter(p => p.group === "foot") : []; Entry { required property var modelData; page: modelData } }
     }
 
     /// the projects worth a line: needing you first, then the ones moving this week (at most 6)

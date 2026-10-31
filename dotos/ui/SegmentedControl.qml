@@ -18,9 +18,10 @@ Rectangle {
     property string current: ""
     signal picked(string key)
 
-    implicitHeight: 32
+    implicitHeight: 28
     radius: App.Appearance.rounding.full
-    color: App.Appearance.surfaceContainer
+    // a quiet track: the segments sit on it, only the selected one is accent
+    color: Qt.alpha(App.Appearance.onSurface, 0.06)
 
     Rectangle {
         id: indicator
@@ -30,10 +31,10 @@ Rectangle {
         property real targetW: 0
         x: targetX
         width: targetW
-        y: 3
-        height: parent.height - 6
+        y: 2
+        height: parent.height - 4
         radius: App.Appearance.rounding.full
-        color: App.Appearance.primary
+        color: Qt.alpha(App.Appearance.primary, 0.2)
         visible: targetW > 0
         Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
         Behavior on width { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
@@ -41,8 +42,8 @@ Rectangle {
 
     RowLayout {
         id: row
-        anchors { fill: parent; margins: 3 }
-        spacing: 2
+        anchors { fill: parent; margins: 2 }
+        spacing: 0
 
         Repeater {
             model: root.model
@@ -76,8 +77,8 @@ Rectangle {
                     font.family: App.Appearance.font.family
                     font.pixelSize: App.Appearance.font.smaller
                     font.weight: seg.sel ? Font.DemiBold : Font.Normal
-                    // Hover brightens the label rather than drawing a pill.
-                    color: seg.sel ? App.Appearance.textOnPrimary
+                    // the selected label takes the accent; hover brightens the rest
+                    color: seg.sel ? App.Appearance.primary
                          : hov.hovered ? App.Appearance.onSurface
                          : App.Appearance.onSurfaceVariant
                     Behavior on color { ColorAnimation { duration: 120 } }

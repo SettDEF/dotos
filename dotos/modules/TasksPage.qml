@@ -108,14 +108,14 @@ Item {
                 spacing: 6
                 Ui.SegmentedControl {
                     visible: !page.inbox
-                    implicitWidth: 150
+                    implicitWidth: 132
                     model: [{ key: "list", label: qsTr("List") }, { key: "board", label: qsTr("Board") }]
                     current: App.Prefs.tasksView
                     onPicked: k => App.Prefs.tasksView = k
                 }
                 Ui.SegmentedControl {
                     visible: !page.inbox && !page.board
-                    implicitWidth: 300
+                    implicitWidth: 268
                     model: [{ key: "bucket", label: qsTr("When") }, { key: "state", label: qsTr("State") }, { key: "project", label: qsTr("Project") }, { key: "list", label: qsTr("List") }]
                     current: App.Prefs.tasksGroup
                     onPicked: k => App.Prefs.tasksGroup = k
@@ -126,8 +126,8 @@ Item {
                     id: tagBtn
                     visible: !page.inbox && !page.board && page.allTags.length > 0
                     readonly property var picked: page.tagFilter.split(",").map(s => s.trim()).filter(Boolean)
-                    implicitWidth: tagRow.implicitWidth + 28; implicitHeight: 34; radius: 17
-                    color: tagBtn.picked.length > 0 ? Qt.alpha(App.Console.data, 0.22) : (tagHover.hovered ? App.Console.panelAlt : App.Console.panel)
+                    implicitWidth: tagRow.implicitWidth + 24; implicitHeight: 28; radius: 14
+                    color: tagBtn.picked.length > 0 ? Qt.alpha(App.Console.data, 0.16) : (tagHover.hovered ? Qt.alpha(App.Console.text, 0.08) : Qt.alpha(App.Console.text, 0.05))
                     Behavior on color { ColorAnimation { duration: 120 } }
                     HoverHandler { id: tagHover; cursorShape: Qt.PointingHandCursor }
                     TapHandler { onTapped: tagPop.opened ? tagPop.close() : tagPop.open() }
@@ -214,8 +214,8 @@ Item {
                 }
 
                 Rectangle {
-                    implicitWidth: 240; implicitHeight: 34; radius: 17
-                    color: App.Console.panelAlt
+                    implicitWidth: 196; implicitHeight: 28; radius: 14
+                    color: Qt.alpha(App.Console.text, 0.05)
                     border.width: search.activeFocus ? 1 : 0
                     border.color: App.Console.data
                     RowLayout {
@@ -226,11 +226,11 @@ Item {
                             id: search
                             Layout.fillWidth: true
                             text: App.Nav.search
-                            placeholderText: qsTr("Filter tasks...")
+                            placeholderText: qsTr("Filter tasks…")
                             placeholderTextColor: App.Console.faint
                             background: null
                             color: App.Console.text
-                            font.family: App.Console.sans; font.pixelSize: 13
+                            font.family: App.Console.sans; font.pixelSize: 12
                             onTextChanged: App.Nav.search = text
                             Keys.onEscapePressed: { App.Nav.search = ""; focus = false; }
                             Connections { target: App.Nav; function onAction(n) { if (n === "search") search.forceActiveFocus(); } }
