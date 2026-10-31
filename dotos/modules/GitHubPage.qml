@@ -182,10 +182,11 @@ Item {
     }
 
     // ── how things look ──────────────────────────────────────────────────────
-    readonly property color green: "#3fb950"
-    readonly property color purple: "#a371f7"
-    readonly property color red: "#f85149"
-    readonly property color grey: "#8b949e"
+    // states in Dotos' fixed state colours, not GitHub's (one design system: VISION.md §6)
+    readonly property color green: App.Console.stateOpen
+    readonly property color purple: App.Console.stateDone
+    readonly property color red: App.Console.stateClosed
+    readonly property color grey: App.Console.stateDraft
     function ago(iso) {
         const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000);
         if (s < 60) return qsTr("just now");
@@ -376,7 +377,7 @@ Item {
                         Rectangle {
                             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                             height: 2; radius: 1
-                            color: "#f78166"
+                            color: App.Console.data
                             visible: on
                         }
                         HoverHandler { id: tHov; cursorShape: Qt.PointingHandCursor }
@@ -619,7 +620,7 @@ Item {
                                     RowLayout {
                                         anchors { fill: parent; leftMargin: 14; rightMargin: 14 }
                                         spacing: 10
-                                        Ui.Icon { text: modelData.type === "dir" ? "folder" : modelData.type === "up" ? "arrow_upward" : "description"; filled: modelData.type === "dir"; size: 17; color: modelData.type === "dir" ? "#54aeff" : App.Console.dim }
+                                        Ui.Icon { text: modelData.type === "dir" ? "folder" : modelData.type === "up" ? "arrow_upward" : "description"; filled: modelData.type === "dir"; size: 17; color: modelData.type === "dir" ? App.Console.data : App.Console.dim }
                                         Text { Layout.fillWidth: true; text: modelData.name; color: App.Console.text; font.pixelSize: 13; elide: Text.ElideRight }
                                         Text { visible: modelData.type === "file"; text: modelData.size > 1024 ? Math.round(modelData.size / 1024) + " KB" : (modelData.size ?? 0) + " B"; color: App.Console.faint; font.pixelSize: 12 }
                                     }
@@ -892,9 +893,9 @@ Item {
                                 delegate: Rectangle {
                                     required property var modelData
                                     implicitWidth: bText.implicitWidth + 24; implicitHeight: 32; radius: 7
-                                    color: modelData.primary ? (bHov.hovered ? Qt.lighter("#238636", 1.15) : "#238636") : (bHov.hovered ? App.Console.panelAlt : App.Console.panel)
-                                    border.width: 1; border.color: modelData.primary ? Qt.lighter("#238636", 1.2) : App.Console.ruleStrong
-                                    Text { id: bText; anchors.centerIn: parent; text: modelData.text; color: modelData.primary ? "white" : App.Console.text; font.pixelSize: 12; font.weight: Font.DemiBold }
+                                    color: modelData.primary ? (bHov.hovered ? Qt.lighter(App.Console.data, 1.1) : App.Console.data) : (bHov.hovered ? App.Console.panelAlt : App.Console.panel)
+                                    border.width: 1; border.color: modelData.primary ? App.Console.data : App.Console.ruleStrong
+                                    Text { id: bText; anchors.centerIn: parent; text: modelData.text; color: modelData.primary ? App.Console.onData : App.Console.text; font.pixelSize: 12; font.weight: Font.DemiBold }
                                     HoverHandler { id: bHov; cursorShape: Qt.PointingHandCursor }
                                     TapHandler { onTapped: parent.modelData.run() }
                                 }
@@ -1059,8 +1060,8 @@ Item {
                 }
                 Rectangle {
                     implicitWidth: 86; implicitHeight: 32; radius: 7
-                    color: yesHov.hovered ? Qt.lighter("#238636", 1.15) : "#238636"
-                    Text { anchors.centerIn: parent; text: qsTr("Confirm"); color: "white"; font.pixelSize: 12; font.weight: Font.DemiBold }
+                    color: yesHov.hovered ? Qt.lighter(App.Console.data, 1.1) : App.Console.data
+                    Text { anchors.centerIn: parent; text: qsTr("Confirm"); color: App.Console.onData; font.pixelSize: 12; font.weight: Font.DemiBold }
                     HoverHandler { id: yesHov; cursorShape: Qt.PointingHandCursor }
                     TapHandler { onTapped: { confirm.close(); if (confirm.yes) confirm.yes(); } }
                 }
