@@ -18,8 +18,9 @@ not ask for.** VISION.md says what Dotos is; this says how its command line work
    window's palette, the TUI and the docs are made from it, so they cannot disagree.
 4. **Everything extendable at every level**: new commands, new verbs on old nouns, aliases,
    hooks on every event, output templates, whole areas (§5).
-5. **Every behaviour is an option**, at the right level: built-in default → machine
-   (`config.toml`) → space → project (`.dotos.toml` in the repo) → the command's flags.
+5. **Every behaviour is an option**, at the right level: built-in default → the repo's
+   `.dotos.toml` (the team's defaults for it) → space → machine (yours) → the command's flags.
+   Yours wins over the team's: a project you turned `git=off` stays off whatever the repo says.
 6. **Nothing automatic you did not ask for**: discovery is not tracking, tracking is not
    syncing, syncing is not sharing (§6).
 7. **Safe to try**: every command that changes something has `--dry-run`; everything is an
@@ -132,7 +133,7 @@ committed for the whole team):
 
 | Key | Values | |
 |---|---|---|
-| `git` | `on` `off` `slow` | read git state; `slow`: every 10 min, not every refresh |
+| `git` | `on` `off` (later `slow`: every 10 min) | read git state |
 | `github` | `on` `off` `prs,issues,ci` | which GitHub parts Dotos follows |
 | `todos` | `on` `off` `TODO,FIXME` | TODO comments become tasks (the extension) |
 | `sync` · `share` | `off` `on` / a space | §above |
@@ -148,8 +149,8 @@ value came from: default, machine, `.dotos.toml`, flag).
 ## 7. Configuration
 
 `dotos config` over one model with layers (each value says where it came from):
-built-in → `~/.config/dotos/config.toml` (machine) → the space → the project's
-`.dotos.toml` → environment `DOTOS_*` → `--config K=V`. `config.json` stays readable and is
+built-in → the project's `.dotos.toml` (the team's) → the space → `~/.config/dotos/config.toml`
+and `projects.json` (this machine, yours) → environment `DOTOS_*` → `--config K=V`. `config.json` stays readable and is
 migrated on first write. `dotos config set projects.mode ask`, `dotos config get --origin`.
 
 ## 8. `dotos doctor`
