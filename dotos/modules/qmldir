@@ -9,6 +9,8 @@ MoreMenu 1.0 MoreMenu.qml
 ShortcutsSheet 1.0 ShortcutsSheet.qml
 Toolbar 1.0 Toolbar.qml
 Sidebar 1.0 Sidebar.qml
+Rail 1.0 Rail.qml
+AreaSidebar 1.0 AreaSidebar.qml
 SpiderWebChart 1.0 SpiderWebChart.qml
 Panel 1.0 Panel.qml
 Tag 1.0 Tag.qml

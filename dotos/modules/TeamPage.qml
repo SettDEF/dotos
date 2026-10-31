@@ -15,6 +15,8 @@ Item {
     id: page
     property string key: "team"
     property string current: ""
+    // the Chat sidebar picks a conversation through Nav
+    Connections { target: App.Nav; function onChatChanged() { if (App.Nav.chat) page.current = App.Nav.chat; } }
     readonly property var list: App.Team.items
     readonly property int cur: list.findIndex(i => i.item === page.current)
     readonly property var selected: page.cur >= 0 ? page.list[page.cur] : null
@@ -31,7 +33,7 @@ Item {
         return false;
     }
     onListChanged: if (page.cur < 0 && page.list.length > 0) page.current = page.list[0].item;
-    Component.onCompleted: { App.Team.refresh(); if (page.list.length > 0 && page.cur < 0) page.current = page.list[0].item; }
+    Component.onCompleted: { App.Team.refresh(); if (App.Nav.chat) page.current = App.Nav.chat; else if (page.list.length > 0 && page.cur < 0) page.current = page.list[0].item; }
 
     // the page holds the keys when no box does (Esc in the box hands them back here)
     Item { id: sink; focus: true; width: 0; height: 0 }
@@ -60,6 +62,8 @@ Item {
             spacing: 10
 
             App.TeamList {
+                // the sidebar lists the conversations (Slack, Teams): here only when it is hidden
+                visible: App.Prefs.sidebarCollapsed
                 id: convs
                 Layout.preferredWidth: page.width < 760 ? 240 : 300
                 Layout.fillHeight: true
@@ -78,7 +82,7 @@ Item {
             App.TeamPeople {
                 Layout.preferredWidth: 236
                 Layout.fillHeight: true
-                visible: page.width >= 900
+                visible: page.width >= 900 && App.Prefs.sidebarCollapsed
             }
         }
     }

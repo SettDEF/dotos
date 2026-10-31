@@ -12,6 +12,8 @@ Singleton {
     id: root
 
     property string page: "home"
+    /// the conversation the Team page opens on (the Chat sidebar sets it)
+    property string chat: ""
     property string search: ""
     property string sheet: ""          // "", "shortcuts", "about", "habit", "page"
     property string toast: ""
@@ -38,6 +40,34 @@ Singleton {
         if (key === "board") { App.Prefs.tasksView = "board"; key = "tasks"; }
         root.page = key;
     }
+
+    // ── the rail's areas (VISION.md §6; Teams' and Slack's rail, Linear's sidebar) ──
+    /// each area: its rail entry, the page it opens first, its pages in the sidebar
+    readonly property var areas: [
+        { key: "activity", label: qsTr("Activity"), icon: "notifications", home: "home",     pages: ["home", "inbox", "history"] },
+        { key: "chat",     label: qsTr("Chat"),     icon: "forum",         home: "team",     pages: ["team"] },
+        { key: "work",     label: qsTr("Work"),     icon: "task_alt",      home: "tasks",    pages: ["tasks", "plan", "habits", "journal", "insights"] },
+        { key: "code",     label: qsTr("Code"),     icon: "code",          home: "projects", pages: ["projects", "github", "changes", "agents"] },
+        { key: "notes",    label: qsTr("Notes"),    icon: "menu_book",     home: "pages",    pages: ["pages", "graph", "tags"] }
+    ]
+    function areaOf(key) {
+        if (key === "board") return "work";
+        if (key === "project") return "code";
+        if (key === "settings" || key === "extensions") return "";
+        const a = root.areas.find(a => a.pages.includes(key));
+        // an extension's page lives in Work, its sidebar lists them
+        return a ? a.key : (root.pages.find(p => p.key === key)?.group === "ext" ? "work" : "activity");
+    }
+    readonly property string area: root.areaOf(root.page)
+    /// the page last open in each area: the rail goes back to it, as a browser's tabs do
+    property var lastIn: ({})
+    onPageChanged: { if (root.area) { const m = Object.assign({}, root.lastIn); m[root.area] = root.page; root.lastIn = m; } }
+    function goArea(key) {
+        const a = root.areas.find(x => x.key === key);
+        if (!a) return;
+        // a second click on the area you are in goes to its first page
+        root.go(root.area === key || !root.lastIn[key] ? a.home : root.lastIn[key]);
+    }
     function openTask(uid) { root.selected = uid; if (!["tasks", "board", "project"].includes(root.page)) root.page = "tasks"; }
     function openProject(name) { root.project = name; root.page = "project"; }
     function openPage(id) { root.pageId = id; root.page = id.startsWith("journal/") ? "journal" : "pages"; }
@@ -56,7 +86,7 @@ Singleton {
         { key: "project",    label: qsTr("Project"),    icon: "folder_open",    group: "hidden", url: "ProjectPage.qml" },
         { key: "agents",     label: qsTr("Agents"),     icon: "smart_toy",      group: "work", url: "AgentsPage.qml" },
         { key: "team",       label: qsTr("Team"),       icon: "groups",         group: "work", url: "TeamPage.qml" },
-        { key: "github",     label: qsTr("GitHub"),     icon: "hub",            group: "work", url: "GitHubPage.qml" },
+        { key: "github",     label: qsTr("GitHub"),     icon: "code_blocks",            group: "work", url: "GitHubPage.qml" },
         { key: "tasks",      label: qsTr("Tasks"),      icon: "check_circle",   group: "life", url: "TasksPage.qml" },
         { key: "plan",       label: qsTr("Plan"),       icon: "event_available", group: "life", url: "PlanPage.qml" },
         { key: "board",      label: qsTr("Board"),      icon: "view_kanban",    group: "hidden", url: "BoardPage.qml" },
