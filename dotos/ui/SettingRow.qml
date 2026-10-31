@@ -37,7 +37,7 @@ Rectangle {
     signal clicked
 
     Layout.fillWidth: true
-    implicitHeight: Math.max(48, body.implicitHeight + 16)
+    implicitHeight: Math.max(52, body.implicitHeight + 20)
     radius: App.Appearance.rounding.small
     color: (!root.available || !root.interactive) ? "transparent"
          : tap.pressed ? App.Appearance.surfaceContainerHigh

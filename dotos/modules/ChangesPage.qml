@@ -303,10 +303,38 @@ Item {
                     ComboBox {
                         id: repoBox
                         Layout.fillWidth: true
+                        implicitHeight: 30
                         model: page.repos
                         textRole: "name"
                         currentIndex: page.repos.findIndex(r => r.path === page.repo)
                         onActivated: i => page.openRepo(page.repos[i].path)
+                        font.family: App.Console.sans; font.pixelSize: 13
+                        // the shell's own surface, not the default white box
+                        background: Rectangle { radius: App.Console.radiusSmall; color: repoBox.hovered ? Qt.alpha(App.Console.text, 0.08) : Qt.alpha(App.Console.text, 0.05) }
+                        contentItem: Text {
+                            leftPadding: 10; rightPadding: 28
+                            text: repoBox.displayText
+                            font: repoBox.font
+                            color: App.Console.text
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
+                        indicator: Ui.Icon {
+                            x: repoBox.width - width - 6; y: (repoBox.height - height) / 2
+                            text: "expand_more"; size: 16; color: App.Console.dim
+                        }
+                        popup: Popup {
+                            y: repoBox.height + 4
+                            width: repoBox.width
+                            padding: 4
+                            contentItem: ListView {
+                                clip: true
+                                implicitHeight: contentHeight
+                                model: repoBox.popup.visible ? repoBox.delegateModel : null
+                                currentIndex: repoBox.highlightedIndex
+                            }
+                            background: Rectangle { radius: App.Console.radiusSmall; color: App.Console.panelAlt; border.width: 1; border.color: App.Console.ruleStrong }
+                        }
                         delegate: ItemDelegate {
                             required property var modelData
                             width: repoBox.width
@@ -364,12 +392,15 @@ Item {
                         Layout.fillWidth: true
                         visible: !(page.tab === "history" && !page.commit) && page.tab !== "remote"
                         placeholderText: qsTr("Filter files  /")
+                        placeholderTextColor: App.Console.faint
                         text: page.filter
                         onTextChanged: page.filter = text
                         Keys.onEscapePressed: { text = ""; page.forceActiveFocus(); }
                         font.family: App.Console.mono; font.pixelSize: 12
                         color: App.Console.text
-                        background: Rectangle { radius: App.Console.radiusSmall; color: App.Console.bg; border.color: filterField.activeFocus ? App.Console.data : App.Console.rule }
+                        leftPadding: 10; rightPadding: 10
+                        implicitHeight: 28
+                        background: Rectangle { radius: 14; color: Qt.alpha(App.Console.text, 0.05); border.width: filterField.activeFocus ? 1 : 0; border.color: App.Console.data }
                     }
 
                     // files
