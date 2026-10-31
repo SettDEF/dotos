@@ -30,6 +30,26 @@ Singleton {
     readonly property color warn: "#d8a54a"
     readonly property color crit: Ui.Appearance.error
 
+    // an item's state, fixed like severity (an open pull request must not turn red with the
+    // wallpaper); a service's own colours (GitHub's) are never used for chrome, only these
+    readonly property color stateOpen: ok
+    readonly property color stateDone: "#9d7fe0"          // merged, an issue closed as done
+    readonly property color stateClosed: crit             // closed unmerged, a failed run
+    readonly property color stateDraft: dim               // a draft, skipped, waiting
+
+    // the grid: every gap, margin and padding is one of these
+    readonly property int gap1: 4
+    readonly property int gap2: 8
+    readonly property int gap3: 12
+    readonly property int gap4: 16
+    readonly property int gap6: 24
+    // type: every size is one of these
+    readonly property int textCaption: 11
+    readonly property int textSmall: 12
+    readonly property int textBody: 13
+    readonly property int textTitle: 14
+    readonly property int textHeading: 19
+
     readonly property string mono: Ui.Appearance.font.mono
     readonly property string sans: Ui.Appearance.font.family
     readonly property int radius: Ui.Appearance.rounding.normal
