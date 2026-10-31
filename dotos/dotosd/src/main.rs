@@ -30,6 +30,9 @@ mod pages;
 mod paths;
 mod plan;
 mod projects;
+mod project_conf;
+mod cli_project;
+mod cli_route;
 mod query;
 mod recurrence;
 mod tags;
@@ -99,7 +102,7 @@ const TEAM_HELP: &str = "\
 dotos — a team on your network (no server, no account)
 
 Add a friend:
-  1. once per computer:   dotos me --handle caesar --name Caesar
+  1. once per computer:   dotos me --handle caesar --name Caesar --github auto   (auto: gh's login)
   2. one person:          dotos lan init \"Our team\"
                           dotos lan invite          a six-digit code, for 10 minutes
   3. each friend:         dotos lan join 482913     that code, on the same network
@@ -149,7 +152,8 @@ v2
   dotos tracked ID            seconds tracked on a task, ever
   dotos undo [--by ai] [--dry]  undo the last change (anyone's, or one author's); --dry only says what
   dotos log [N] [--task ID]   the change log
-  dotos projects              projects under the roots, with git state
+  dotos projects              the tracked projects, with git state
+  dotos project …             which projects Dotos takes on, and how (dotos project --help)
   dotos git ...               remote git: PRs, issues, branches, commits, CI
   dotos tag ...               custom tags: add, edit, rm, list, spinweb
   dotos diff [--json] [--working] [--agents] [--file PATH] [--since TS]
@@ -211,6 +215,12 @@ fn main() {
         print!("{TEAM_HELP}");
         return;
     }
+    // the syntax in front of everything (CLI.md §2, §5): --k=v, short flags, aliases, noun verb,
+    // your own dotos-NAME commands, "did you mean"
+    let args = match cli_route::route(args.clone(), args.iter().any(|a| a == "--json" || a == "-j")) {
+        cli_route::Route::Args(a) => a,
+        cli_route::Route::Exit(code) => std::process::exit(code),
+    };
     if args.first().map(|a| a == "-h" || a == "--help").unwrap_or(false) {
         print!("{USAGE}");
         return;
@@ -268,10 +278,10 @@ fn main() {
         },
         // Teams 1 (docs/teams.md): who you are, and the conversation on an item
         "me" => {
-            let (n, h, c) = (flag(&rest, "--name"), flag(&rest, "--handle"), flag(&rest, "--color"));
-            let got = if n.is_some() || h.is_some() || c.is_some() { threads::set_me(n, h, c) } else { Ok(threads::me()) };
+            let (n, h, c, g) = (flag(&rest, "--name"), flag(&rest, "--handle"), flag(&rest, "--color"), flag(&rest, "--github"));
+            let got = if n.is_some() || h.is_some() || c.is_some() || g.is_some() { threads::set_me(n, h, c, g) } else { Ok(threads::me()) };
             match got {
-                Ok(m) => { if json { println!("{}", serde_json::to_string(&m).unwrap_or_default()); } else { println!("{} (@{})", m.name, m.handle); } 0 }
+                Ok(m) => { if json { println!("{}", serde_json::to_string(&m).unwrap_or_default()); } else { println!("{} (@{}){}", m.name, m.handle, if m.github.is_empty() { String::new() } else { format!("  github: {}", m.github) }); } 0 }
                 Err(e) => { eprintln!("dotos: {e}"); 1 }
             }
         }
@@ -372,7 +382,7 @@ fn main() {
                 let agents: Vec<String> = std::iter::once("claude".to_string()).chain(people.iter().map(|p| format!("claude@{}", p.handle))).collect();
                 println!("{}", serde_json::json!({ "people": people, "agents": agents }));
             } else {
-                for p in &people { println!("@{}  {}", p.handle, p.name); }
+                for p in &people { println!("@{}  {}{}", p.handle, p.name, if p.github.is_empty() { String::new() } else { format!("  (github: {})", p.github) }); }
             }
             0
         }
@@ -722,6 +732,7 @@ fn main() {
                 }
             }
         },
+        "project" => cli_project::run(&rest[1..], json),
         "projects" => {
             let v: Vec<_> = projects::discover().iter().map(|d| projects::load(d, true)).collect();
             if json { println!("{}", serde_json::to_string(&v).unwrap_or_default()); }

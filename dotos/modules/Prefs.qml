@@ -22,6 +22,7 @@ Singleton {
     property alias showDone: adapter.showDone
     property alias inspectorOpen: adapter.inspectorOpen
     property alias projectsSort: adapter.projectsSort
+    property alias githubRepo: adapter.githubRepo
     property alias homeCards: adapter.homeCards
     property alias homeLayout: adapter.homeLayout
     property alias arrangeStyle: adapter.arrangeStyle
@@ -40,6 +41,9 @@ Singleton {
         root.homeCards = next;
     }
 
+    /// the file has been read: nothing is saved before, or the defaults went over it
+    property bool loaded: false
+
     FileView {
         path: root.dir + "/gui.json"
         watchChanges: true
@@ -47,8 +51,12 @@ Singleton {
         // layout, and saved the default over yours
         blockLoading: true
         onFileChanged: reload()
-        onAdapterUpdated: writeAdapter()
-        onLoadFailed: error => { if (error === FileViewError.FileNotFound) writeAdapter(); }
+        // Quickshell 0.3 reads it after the window is up even so, and the window saved its size on
+        // the way: every start wrote the defaults over gui.json (the view, the sort, the cards: all
+        // back to new). Saved only once it has been read.
+        onLoaded: root.loaded = true
+        onAdapterUpdated: if (root.loaded) writeAdapter()
+        onLoadFailed: error => { if (error === FileViewError.FileNotFound) { root.loaded = true; writeAdapter(); } }
 
         JsonAdapter {
             id: adapter
@@ -60,6 +68,7 @@ Singleton {
             property bool showDone: false
             property bool inspectorOpen: true
             property string projectsSort: "health" // health | name | recent
+            property string githubRepo: ""         // the GitHub page's repository, owner/name
             property var homeCards: ({})
             property string homeLayout: ""            // JSON: [{ id, col, row, w, h }] on a 12-column grid
             property string arrangeStyle: "border"     // border | snap — how cards are grabbed while arranging

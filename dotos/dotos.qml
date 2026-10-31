@@ -40,6 +40,8 @@ ShellRoot {
     function run(action) {
         if (appRoot._inRun) return;
         if (App.Nav.pages.some(p => p.key === action)) { App.Nav.go(action); stage.forceActiveFocus(); return; }
+        // the rail's areas (Ctrl 1…5)
+        if (action.startsWith("area:")) { App.Nav.goArea(action.slice(5)); stage.forceActiveFocus(); return; }
         switch (action) {
             case "capture":
                 if (!["tasks", "inbox", "home", "project"].includes(App.Nav.page)) App.Nav.go("tasks");
@@ -93,6 +95,11 @@ ShellRoot {
 
     /// Default shortcuts (can be overridden by ~/.config/dotos/gui.json "keybinds")
     readonly property var defaultShortcuts: [
+        key(Qt.Key_1, Qt.ControlModifier, qsTr("Activity"), qsTr("Areas"), "area:activity", ["Ctrl", "1"]),
+        key(Qt.Key_2, Qt.ControlModifier, qsTr("Chat"), qsTr("Areas"), "area:chat", ["Ctrl", "2"]),
+        key(Qt.Key_3, Qt.ControlModifier, qsTr("Work"), qsTr("Areas"), "area:work", ["Ctrl", "3"]),
+        key(Qt.Key_4, Qt.ControlModifier, qsTr("Code"), qsTr("Areas"), "area:code", ["Ctrl", "4"]),
+        key(Qt.Key_5, Qt.ControlModifier, qsTr("Notes"), qsTr("Areas"), "area:notes", ["Ctrl", "5"]),
         key(Qt.Key_1, 0, qsTr("Home"), qsTr("Go to"), "home", ["1"]),
         key(Qt.Key_2, 0, qsTr("Inbox"), qsTr("Go to"), "inbox", ["2"]),
         key(Qt.Key_3, 0, qsTr("Projects"), qsTr("Go to"), "projects", ["3"]),
@@ -344,7 +351,9 @@ ShellRoot {
                 anchors.fill: parent
                 spacing: 0
 
-                App.Sidebar { Layout.fillHeight: true }
+                // the rail (areas) and the area's sidebar: Teams' and Slack's rail, Linear's sidebar
+                App.Rail { Layout.fillHeight: true }
+                App.AreaSidebar { Layout.fillHeight: true }
 
                 ColumnLayout {
                     Layout.fillWidth: true
