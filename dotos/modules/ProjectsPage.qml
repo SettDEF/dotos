@@ -267,11 +267,12 @@ Item {
                 onPicked: k => App.Prefs.projectsSort = k
             }
             Rectangle {
-                implicitWidth: 220; implicitHeight: 36; radius: 18
-                color: App.Console.panelAlt
+                implicitWidth: 220; implicitHeight: 28; radius: 14
+                color: Qt.alpha(App.Console.text, 0.05)
                 RowLayout {
-                    anchors { fill: parent; leftMargin: 12; rightMargin: 8 }
-                    Ui.Icon { text: "search"; size: 17; color: App.Console.faint }
+                    anchors { fill: parent; leftMargin: 10; rightMargin: 6 }
+                    spacing: 6
+                    Ui.Icon { text: "search"; size: 15; color: App.Console.faint }
                     TextField {
                         ContextMenu.menu: Ui.TextMenu { target: searchField }
                         id: searchField
@@ -280,7 +281,7 @@ Item {
                         placeholderTextColor: App.Console.faint
                         background: null
                         color: App.Console.text
-                        font.family: App.Console.sans; font.pixelSize: 14
+                        font.family: App.Console.sans; font.pixelSize: 12
                         onTextChanged: page.filter = text
                     }
                 }
@@ -306,7 +307,7 @@ Item {
                 delegate: Rectangle {
                     required property var modelData
                     readonly property bool sel: page.show === modelData.key
-                    implicitWidth: chipRow.implicitWidth + 24; implicitHeight: 30; radius: 15
+                    implicitWidth: chipRow.implicitWidth + 20; implicitHeight: 26; radius: 13
                     color: sel ? Qt.alpha(modelData.tone, 0.2) : chipHov.hovered ? App.Console.panelAlt : App.Console.panel
                     border.width: sel ? 1 : 0; border.color: Qt.alpha(modelData.tone, 0.6)
                     RowLayout {
@@ -314,8 +315,8 @@ Item {
                         anchors.centerIn: parent
                         spacing: 6
                         Rectangle { visible: modelData.key !== ""; implicitWidth: 7; implicitHeight: 7; radius: 3.5; color: modelData.tone }
-                        Text { text: modelData.label; font.family: App.Console.sans; font.pixelSize: 13; color: App.Console.text }
-                        Text { text: modelData.n; font.family: App.Console.mono; font.pixelSize: 12; color: App.Console.dim }
+                        Text { text: modelData.label; font.family: App.Console.sans; font.pixelSize: 12; color: App.Console.text }
+                        Text { text: modelData.n; font.family: App.Console.mono; font.pixelSize: 11; color: App.Console.dim }
                     }
                     HoverHandler { id: chipHov; cursorShape: Qt.PointingHandCursor }
                     TapHandler { onTapped: page.show = (sel ? "" : modelData.key) }
