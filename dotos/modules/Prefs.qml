@@ -40,6 +40,9 @@ Singleton {
         root.homeCards = next;
     }
 
+    /// the file has been read: nothing is saved before, or the defaults went over it
+    property bool loaded: false
+
     FileView {
         path: root.dir + "/gui.json"
         watchChanges: true
@@ -47,8 +50,12 @@ Singleton {
         // layout, and saved the default over yours
         blockLoading: true
         onFileChanged: reload()
-        onAdapterUpdated: writeAdapter()
-        onLoadFailed: error => { if (error === FileViewError.FileNotFound) writeAdapter(); }
+        // Quickshell 0.3 reads it after the window is up even so, and the window saved its size on
+        // the way: every start wrote the defaults over gui.json (the view, the sort, the cards: all
+        // back to new). Saved only once it has been read.
+        onLoaded: root.loaded = true
+        onAdapterUpdated: if (root.loaded) writeAdapter()
+        onLoadFailed: error => { if (error === FileViewError.FileNotFound) { root.loaded = true; writeAdapter(); } }
 
         JsonAdapter {
             id: adapter
