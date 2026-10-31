@@ -341,7 +341,7 @@ Item {
 
                 // found, not decided: take it on or leave it (CLI.md §6, `dotos project`)
                 Rectangle {
-                    visible: App.Store.newProjects.length > 0 || App.Store.projectMode !== "all"
+                    // always: it is where you choose how new folders are treated
                     Layout.fillWidth: true
                     implicitHeight: newCol.implicitHeight + 24
                     radius: App.Console.radius
@@ -357,7 +357,7 @@ Item {
                             Ui.Icon { text: "travel_explore"; size: 18; color: App.Console.data }
                             Text {
                                 Layout.fillWidth: true
-                                text: App.Store.newProjects.length > 0 ? (App.Store.newProjects.length === 1 ? qsTr("1 new project found") : qsTr("%1 new projects found").arg(App.Store.newProjects.length)) : qsTr("Projects are taken on only when you choose")
+                                text: App.Store.newProjects.length > 0 ? (App.Store.newProjects.length === 1 ? qsTr("1 new project found") : qsTr("%1 new projects found").arg(App.Store.newProjects.length)) : App.Store.projectMode === "all" ? qsTr("Every project found is taken on") : qsTr("Projects are taken on only when you choose")
                                 color: App.Console.text; font.pixelSize: 14; font.weight: Font.DemiBold
                             }
                             Text { text: qsTr("New folders:"); color: App.Console.dim; font.pixelSize: 12 }
